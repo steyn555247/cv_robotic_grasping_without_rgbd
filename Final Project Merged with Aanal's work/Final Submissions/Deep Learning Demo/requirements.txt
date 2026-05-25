@@ -1,0 +1,7 @@
+flask
+flask-cors
+numpy
+scipy
+opencv-python
+open3d
+pyyaml

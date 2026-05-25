@@ -1,0 +1,32 @@
+# Python virtual environments
+**/venv/
+**/.venv/
+**/env/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.ipynb_checkpoints/
+
+# Datasets (too large for git)
+cornell comparisson/cornell_dataset/
+
+# Large media files (exceed GitHub's 100MB per-file limit)
+**/Heatmap_demo_v3.mp4
+*.mp4
+*.mov
+*.avi
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Windows reserved-name stray file
+cornell comparisson/nul
+
+# Build / cache
+*.log
+.cache/

@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heatmap Stability Demo</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e; color: #eee; min-height: 100vh; padding: 20px;
+        }
+        h1 { text-align: center; margin-bottom: 20px; color: #00d4ff; }
+        .container {
+            max-width: 1600px; margin: 0 auto;
+            display: grid; grid-template-columns: 320px 1fr; gap: 20px;
+        }
+        .sidebar {
+            background: #16213e; border-radius: 12px; padding: 20px;
+            max-height: calc(100vh - 100px); overflow-y: auto;
+        }
+        .main {
+            background: #16213e; border-radius: 12px; padding: 20px;
+            display: flex; flex-direction: column; gap: 20px;
+        }
+        .output-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .output-panel { background: #0f3460; border-radius: 8px; padding: 15px; }
+        .output-panel h3 { color: #00d4ff; margin-bottom: 10px; font-size: 14px; }
+        .output-panel img { max-width: 100%; border-radius: 6px; }
+        .section { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #2a3f5f; }
+        .section:last-child { border-bottom: none; }
+        .section-title {
+            font-size: 14px; font-weight: 600; color: #00d4ff;
+            margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .upload-grid { display: grid; gap: 8px; }
+        .upload-item { display: flex; flex-direction: column; gap: 4px; }
+        .upload-item label { font-size: 11px; color: #aaa; }
+        .upload-item input[type="file"] { font-size: 10px; color: #888; }
+        .upload-item input[type="file"]::file-selector-button {
+            background: #0f3460; color: #fff; border: none;
+            padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 10px;
+        }
+        .upload-item input[type="file"]::file-selector-button:hover { background: #1a4a7a; }
+        .upload-status { font-size: 10px; color: #4ade80; }
+        .slider-group { margin-bottom: 10px; }
+        .slider-label { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 3px; }
+        .slider-label span:first-child { color: #ccc; }
+        .slider-label span:last-child { color: #00d4ff; font-family: monospace; }
+        input[type="range"] {
+            width: 100%; height: 5px; border-radius: 3px;
+            background: #2a3f5f; outline: none; -webkit-appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 14px; height: 14px;
+            border-radius: 50%; background: #00d4ff; cursor: pointer;
+        }
+        .btn {
+            width: 100%; padding: 12px; border: none; border-radius: 8px;
+            font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+        }
+        .btn-primary { background: linear-gradient(135deg, #00d4ff, #0099cc); color: #000; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4); }
+        .btn-primary:disabled { background: #444; color: #888; cursor: not-allowed; transform: none; }
+        .btn-secondary { background: #2a3f5f; color: #fff; margin-top: 8px; }
+        .btn-secondary:hover { background: #3a5070; }
+        .placeholder {
+            width: 100%; height: 300px; background: #0a2540; border-radius: 6px;
+            display: flex; align-items: center; justify-content: center; color: #444; font-size: 13px;
+        }
+        .loading { display: none; align-items: center; justify-content: center; gap: 10px; color: #00d4ff; padding: 10px; }
+        .loading.active { display: flex; }
+        .spinner {
+            width: 20px; height: 20px; border: 3px solid #2a3f5f;
+            border-top-color: #00d4ff; border-radius: 50%; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .error { background: #ff4444; color: #fff; padding: 10px; border-radius: 6px; margin-top: 10px; font-size: 12px; display: none; }
+        .required { color: #ff6b6b; }
+        .optional { color: #888; font-style: italic; font-size: 9px; }
+        
+        /* Checkbox styling */
+        .checkbox-group { margin-bottom: 12px; }
+        .checkbox-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 10px; background: #0f3460; border-radius: 6px; margin-bottom: 8px;
+            cursor: pointer;
+        }
+        .checkbox-item:hover { background: #1a4a7a; }
+        .checkbox-item input[type="checkbox"] {
+            width: 18px; height: 18px; cursor: pointer;
+            accent-color: #00d4ff;
+        }
+        .checkbox-item label {
+            font-size: 12px; color: #ccc; cursor: pointer; flex: 1;
+        }
+        .checkbox-item .checkbox-desc {
+            font-size: 10px; color: #888; display: block; margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔥 Heatmap Stability Demo</h1>
+    
+    <div class="container">
+        <div class="sidebar">
+            <div class="section">
+                <div class="section-title">📁 Upload Files</div>
+                <div class="upload-grid">
+                    <div class="upload-item">
+                        <label>Mesh (.obj) <span class="required">*</span></label>
+                        <input type="file" id="mesh" accept=".obj,.ply">
+                        <div class="upload-status" id="mesh-status"></div>
+                    </div>
+                    <div class="upload-item">
+                        <label>Color Image (.png/.jpg) <span class="required">*</span></label>
+                        <input type="file" id="color" accept=".png,.jpg,.jpeg">
+                        <div class="upload-status" id="color-status"></div>
+                    </div>
+                    <div class="upload-item">
+                        <label>Mask (.npz/.npy/.png) <span class="required">*</span></label>
+                        <input type="file" id="mask" accept=".npz,.npy,.png">
+                        <div class="upload-status" id="mask-status"></div>
+                    </div>
+                    <div class="upload-item">
+                        <label>Poses (.npy) <span class="required">*</span></label>
+                        <input type="file" id="pose" accept=".npy">
+                        <div class="upload-status" id="pose-status"></div>
+                    </div>
+                    <div class="upload-item">
+                        <label>Intrinsics (.yml/.yaml/.npy) <span class="required">*</span></label>
+                        <input type="file" id="intrinsics" accept=".yml,.yaml,.npy">
+                        <div class="upload-status" id="intrinsics-status"></div>
+                    </div>
+                    <div class="upload-item">
+                        <label>Scores (.npy) <span class="optional">for best pose selection</span></label>
+                        <input type="file" id="scores" accept=".npy">
+                        <div class="upload-status" id="scores-status"></div>
+                    </div>
+                    <div class="upload-item">
+                        <label>Resize Metadata (.npy) <span class="optional">optional</span></label>
+                        <input type="file" id="resize_metadata" accept=".npy">
+                        <div class="upload-status" id="resize_metadata-status"></div>
+                    </div>
+                    <div class="upload-item">
+                        <label>Mesh Scale (.npy) <span class="optional">optional</span></label>
+                        <input type="file" id="mesh_scale" accept=".npy">
+                        <div class="upload-status" id="mesh_scale-status"></div>
+                    </div>
+                </div>
+                <button class="btn btn-secondary" onclick="uploadFiles()">Upload All Files</button>
+            </div>
+
+            <!-- Algorithm Options -->
+            <div class="section">
+                <div class="section-title">🔧 Algorithm Options</div>
+                <div class="checkbox-group">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="use_cog_avg">
+                        <label for="use_cog_avg">
+                            Use Average CoG
+                            <span class="checkbox-desc">Use mean of vertices (checked) vs bounding box center (unchecked)</span>
+                        </label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="use_vertex">
+                        <label for="use_vertex">
+                            Use Vertex Grasp
+                            <span class="checkbox-desc">Use vertex-based grasp (checked) vs mask ray-casting (unchecked)</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">📐 Surface Thresholds</div>
+                <div class="slider-group">
+                    <div class="slider-label"><span>Top-facing</span><span id="top_threshold_val">0.70</span></div>
+                    <input type="range" id="top_threshold" min="0" max="1" step="0.05" value="0.7">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label"><span>Bottom-facing</span><span id="bottom_threshold_val">-0.70</span></div>
+                    <input type="range" id="bottom_threshold" min="-1" max="0" step="0.05" value="-0.7">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label"><span>Side-facing</span><span id="side_threshold_val">0.30</span></div>
+                    <input type="range" id="side_threshold" min="0" max="1" step="0.05" value="0.3">
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">⬇️ Bottom Weights</div>
+                <div class="slider-group">
+                    <div class="slider-label"><span>Height</span><span id="bottom_height_weight_val">0.20</span></div>
+                    <input type="range" id="bottom_height_weight" min="0" max="1" step="0.05" value="0.2">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label"><span>CoG</span><span id="bottom_cog_weight_val">0.30</span></div>
+                    <input type="range" id="bottom_cog_weight" min="0" max="1" step="0.05" value="0.3">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label"><span>Vertical</span><span id="bottom_vertical_weight_val">0.20</span></div>
+                    <input type="range" id="bottom_vertical_weight" min="0" max="1" step="0.05" value="0.2">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label"><span>Edge</span><span id="bottom_edge_weight_val">0.30</span></div>
+                    <input type="range" id="bottom_edge_weight" min="0" max="1" step="0.05" value="0.3">
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">◀️ Side Weights</div>
+                <div class="slider-group">
+                    <div class="slider-label"><span>CoG</span><span id="side_cog_weight_val">0.40</span></div>
+                    <input type="range" id="side_cog_weight" min="0" max="1" step="0.05" value="0.4">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label"><span>Edge</span><span id="side_edge_weight_val">0.30</span></div>
+                    <input type="range" id="side_edge_weight" min="0" max="1" step="0.05" value="0.3">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label"><span>Height</span><span id="side_height_weight_val">0.30</span></div>
+                    <input type="range" id="side_height_weight" min="0" max="1" step="0.05" value="0.3">
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">⬆️ Top Weights</div>
+                <div class="slider-group">
+                    <div class="slider-label"><span>CoG</span><span id="top_cog_weight_val">0.20</span></div>
+                    <input type="range" id="top_cog_weight" min="0" max="1" step="0.05" value="0.2">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label"><span>Edge</span><span id="top_edge_weight_val">0.30</span></div>
+                    <input type="range" id="top_edge_weight" min="0" max="1" step="0.05" value="0.3">
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">🔷 Other Weights</div>
+                <div class="slider-group">
+                    <div class="slider-label"><span>CoG</span><span id="other_cog_weight_val">0.30</span></div>
+                    <input type="range" id="other_cog_weight" min="0" max="1" step="0.05" value="0.3">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label"><span>Edge</span><span id="other_edge_weight_val">0.30</span></div>
+                    <input type="range" id="other_edge_weight" min="0" max="1" step="0.05" value="0.3">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label"><span>Height</span><span id="other_height_weight_val">0.20</span></div>
+                    <input type="range" id="other_height_weight" min="0" max="1" step="0.05" value="0.2">
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">⚙️ General</div>
+                <div class="slider-group">
+                    <div class="slider-label"><span>Number of points</span><span id="num_points_val">5</span></div>
+                    <input type="range" id="num_points" min="1" max="20" step="1" value="5">
+                </div>
+                <div class="slider-group">
+                    <div class="slider-label"><span>Gaussian sigma</span><span id="gaussian_sigma_val">16</span></div>
+                    <input type="range" id="gaussian_sigma" min="1" max="50" step="1" value="16">
+                </div>
+            </div>
+
+            <button class="btn btn-primary" id="generate-btn" onclick="generateHeatmap()">Generate Heatmap</button>
+            <div class="loading" id="loading"><div class="spinner"></div><span>Processing...</span></div>
+            <div class="error" id="error"></div>
+        </div>
+
+        <div class="main">
+            <div class="output-row">
+                <div class="output-panel">
+                    <h3>📍 Stability Points</h3>
+                    <div class="placeholder" id="points-placeholder">Upload files and generate</div>
+                    <img id="points-image" style="display: none;">
+                </div>
+                <div class="output-panel">
+                    <h3>📊 Point Data</h3>
+                    <div id="point-table" style="max-height: 400px; overflow-y: auto; font-size: 11px;">
+                        <table style="width: 100%; border-collapse: collapse; color: #ccc;">
+                            <thead><tr style="background: #0a2540; position: sticky; top: 0;">
+                                <th style="padding: 6px; text-align: left;">Rank</th>
+                                <th style="padding: 6px; text-align: left;">Vertex</th>
+                                <th style="padding: 6px; text-align: left;">Score</th>
+                                <th style="padding: 6px; text-align: left;">Pixel</th>
+                                <th style="padding: 6px; text-align: left;">3D Pose (x, y, z)</th>
+                            </tr></thead>
+                            <tbody id="point-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="output-row">
+                <div class="output-panel">
+                    <h3>🤖 Grasp Candidates</h3>
+                    <div class="placeholder" id="grasp-placeholder">Upload files and generate</div>
+                    <img id="grasp-image" style="display: none;">
+                </div>
+                <div class="output-panel">
+                    <h3>🔥 Heatmap Overlay</h3>
+                    <div class="placeholder" id="heatmap-placeholder">Upload files and generate</div>
+                    <img id="heatmap-image" style="display: none;">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const sliders = [
+            'top_threshold', 'bottom_threshold', 'side_threshold',
+            'bottom_height_weight', 'bottom_cog_weight', 'bottom_vertical_weight', 'bottom_edge_weight',
+            'side_cog_weight', 'side_edge_weight', 'side_height_weight',
+            'top_cog_weight', 'top_edge_weight',
+            'other_cog_weight', 'other_edge_weight', 'other_height_weight',
+            'num_points', 'gaussian_sigma'
+        ];
+
+        sliders.forEach(id => {
+            const slider = document.getElementById(id);
+            const display = document.getElementById(id + '_val');
+            slider.addEventListener('input', () => {
+                display.textContent = (id === 'num_points' || id === 'gaussian_sigma') 
+                    ? slider.value : parseFloat(slider.value).toFixed(2);
+            });
+        });
+
+        async function uploadFiles() {
+            const formData = new FormData();
+            const fileInputs = ['mesh', 'color', 'mask', 'pose', 'intrinsics', 'scores', 'resize_metadata', 'mesh_scale'];
+            
+            fileInputs.forEach(name => {
+                const input = document.getElementById(name);
+                if (input.files.length > 0) formData.append(name, input.files[0]);
+            });
+
+            try {
+                const response = await fetch('/upload', { method: 'POST', body: formData });
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    result.files.forEach(name => {
+                        const status = document.getElementById(name + '-status');
+                        if (status) status.textContent = '✓ Uploaded';
+                    });
+                } else {
+                    showError(result.message);
+                }
+            } catch (e) {
+                showError('Upload failed: ' + e.message);
+            }
+        }
+
+        async function generateHeatmap() {
+            const btn = document.getElementById('generate-btn');
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            
+            btn.disabled = true;
+            loading.classList.add('active');
+            error.style.display = 'none';
+
+            const params = {};
+            sliders.forEach(id => { params[id] = parseFloat(document.getElementById(id).value); });
+            
+            // Add checkbox values
+            params.use_cog_avg = document.getElementById('use_cog_avg').checked;
+            params.use_vertex = document.getElementById('use_vertex').checked;
+
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(params)
+                });
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    showImage('points', result.points_image);
+                    showImage('grasp', result.grasp_image);
+                    showImage('heatmap', result.heatmap);
+                    populatePointTable(result.point_data);
+                } else {
+                    showError(result.message);
+                }
+            } catch (e) {
+                showError('Generation failed: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                loading.classList.remove('active');
+            }
+        }
+
+        function showImage(name, base64) {
+            const img = document.getElementById(name + '-image');
+            const placeholder = document.getElementById(name + '-placeholder');
+            img.src = 'data:image/png;base64,' + base64;
+            img.style.display = 'block';
+            placeholder.style.display = 'none';
+        }
+
+        function populatePointTable(pointData) {
+            const tbody = document.getElementById('point-tbody');
+            tbody.innerHTML = pointData.map(p => `
+                <tr style="border-bottom: 1px solid #2a3f5f;">
+                    <td style="padding: 6px;">${p.rank}</td>
+                    <td style="padding: 6px;">${p.vertex_idx}</td>
+                    <td style="padding: 6px;">${p.score.toFixed(4)}</td>
+                    <td style="padding: 6px;">(${p.pixel[0]}, ${p.pixel[1]})</td>
+                    <td style="padding: 6px; font-family: monospace;">(${p.pose_3d[0].toFixed(4)}, ${p.pose_3d[1].toFixed(4)}, ${p.pose_3d[2].toFixed(4)})</td>
+                </tr>
+            `).join('');
+        }
+
+        function showError(message) {
+            const error = document.getElementById('error');
+            error.textContent = message;
+            error.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
