@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rgb-grasp-research"
+version = "0.0.1"
+description = "Training-free monocular-RGB grasp annotation — research code"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "numpy>=1.26,<2.2",
+    "scipy>=1.11",
+    "pillow>=10.0",
+    "opencv-python>=4.8",
+    "shapely>=2.0",
+    "matplotlib>=3.8",
+    "seaborn>=0.13",
+    "pandas>=2.1",
+    "statsmodels>=0.14",
+    "tqdm>=4.66",
+    "pyyaml>=6.0",
+    "torch>=2.2",
+    "torchvision>=0.17",
+    "transformers>=4.40",
+    "huggingface_hub>=0.23",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-xdist>=3.5",
+    "ruff>=0.5",
+    "ipython>=8.20",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+testpaths = ["src/eval/tests"]
+addopts = "-v"

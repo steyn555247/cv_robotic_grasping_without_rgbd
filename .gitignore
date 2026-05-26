@@ -8,9 +8,17 @@
 *.pyd
 *.egg-info/
 .ipynb_checkpoints/
+.pytest_cache/
+.ruff_cache/
+
+# Research venv at repo root
+.venv-research/
 
 # Datasets (too large for git)
 cornell comparisson/cornell_dataset/
+data/cornell/raw/
+data/jacquard/
+data/graspnet/
 
 # Large media files (exceed GitHub's 100MB per-file limit)
 **/Heatmap_demo_v3.mp4
@@ -30,3 +38,10 @@ cornell comparisson/nul
 # Build / cache
 *.log
 .cache/
+build/
+dist/
+
+# Experiment artifacts (large; we keep results.json + notes.md committed but not predictions/)
+experiments/*/predictions/
+experiments/*/checkpoints/
+experiments/*/data_cache/

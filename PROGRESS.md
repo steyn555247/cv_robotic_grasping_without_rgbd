@@ -59,7 +59,7 @@
 
 | Dataset | Local | Splits frozen | Notes |
 |---|---|---|---|
-| Cornell | ✓ at `cornell comparisson/cornell_dataset/` (12 GB) | ✓ frozen (`src/data/splits/cornell.json`, seed=42) | 885 images (30 more than canonical 855); gap-≥5 heuristic yields only 2 objects — image-wise CV is the usable protocol. See `data/cornell/README.md`. |
+| Cornell | ✓ at `cornell comparisson/cornell_dataset/` (12 GB) | ✓ frozen (`src/data/splits/cornell.json`, seed=42) | **885 images = canonical count** (verified vs. Jiang 2011, Redmon 2015, Morrison 2018, Pinto 2016 — see `paper/related_work.md` § "Dataset audit"). 950-999 gap is a folder boundary, not withheld. Image-wise 5-fold ready; object-wise curation deferred to RA-L extension (no public `backgroundMapping.txt`). |
 | Jacquard | ○ | ○ | ~75 GB; fetch only when EXP-06 dispatched |
 | GraspNet-1B | ○ | ○ | Optional, very large |
 

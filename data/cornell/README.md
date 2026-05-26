@@ -36,7 +36,7 @@ Per pcd ID:
 | Missing IDs in range | 50 (the block 950–999 is absent) |
 | pcd IDs with all four needed files (RGB, depth, cpos, pcl) | 885 / 885 |
 | Total positive grasp rectangles (`cpos` lines / 4, NaN-filtered) | **5111** |
-| Objects identified by gap-≥5 heuristic | **2** (see caveat below) |
+| Canonical object count (per Jiang 2011) | **~240** (not derivable from local files — see caveat 3) |
 
 ## Splits — `src/data/splits/cornell.json`
 
@@ -59,33 +59,39 @@ SHA-256 of `src/data/splits/cornell.json`:
 
 ## Data quirks discovered during loader build
 
-1. **855 vs 885.** The Cornell paper canon is 855 images. This local
-   copy contains **885** — 30 more samples than the canonical set.
-   We use all 885; downstream comparisons to literature numbers should
-   note the larger denominator.
+1. **885 IS the canonical Cornell image count.** Verified 2026-05-25 by
+   `lit-scout` against Jiang ICRA 2011 (origin), Redmon ICRA 2015
+   (Sec. V), Morrison RSS 2018 (GG-CNN), and Pinto 2016. The "855"
+   figure that appeared in some prior project notes was a transcription
+   error. Our local 885 matches the canon exactly. See
+   `paper/related_work.md` § "Dataset audit — Cornell canonical numbers".
 
-2. **One large gap.** pcd IDs `950–999` (50 IDs) are absent. All other
-   IDs in `[100, 1034]` are present and contiguous.
+2. **The 950-999 gap is a folder boundary, not withholding.** Folder
+   `09/` contains pcd0900–pcd0949 (50 images); folder `10/` contains
+   pcd1000–pcd1034 (35 images). The "missing" pcd0950–pcd0999 block
+   simply doesn't exist in the original Cornell distribution and is
+   undocumented (no published explanation found). Best interpretation:
+   curation artifact — failed-QC images never released. Every prior
+   Cornell-evaluating paper reports the full 885.
 
-3. **Gap-≥5 heuristic yields only 2 objects.** Because the surviving
-   pcd IDs are contiguous everywhere except the single 950–999 gap,
-   the "consecutive-IDs-with-gap≥5-start-new-object" rule produces
-   exactly two objects: `[100, 949]` and `[1000, 1034]`. The
-   resulting object-wise folds are heavily imbalanced (fold 0: 35
-   samples, fold 1: 850 samples, folds 2–4: empty). This is the
-   correct mechanical output of the specified heuristic on this
-   distribution of the data, not a bug in the loader.
+3. **No public `pcd_id → object_id` mapping.** Cornell contains
+   ~240 unique objects (Jiang 2011), but the original distribution's
+   `backgroundMapping.txt` is **not present in our local copy** and
+   was never publicly released by Lenz/Redmon/Kumra. Standard practice
+   (every Cornell paper since 2015): build a private partition.
+   We defer this curation to the RA-L extension; the workshop will
+   report image-wise 5-fold CV only (this is also what most prior
+   papers report — Redmon 2015, GG-CNN 2018, most modern works).
 
-   **Implication:** object-wise CV as currently encoded is not a
-   useful generalisation test. Treat the image-wise folds as the
-   primary evaluation protocol. If true object-wise CV is needed,
-   commit a hand-curated or externally-sourced object-assignment
-   file as `cornell_v2.json`.
+   `object_assignment` in the current splits JSON is the mechanical
+   gap-≥5 output and is degenerate (2 objects). **Do not use it
+   for object-wise CV.** A future `cornell_v2.json` will fix this
+   when an external mapping is sourced or a hand curation is done.
 
-4. **One file with NaN grasps.** `pcd0165cpos.txt` contains a partial
-   rectangle whose first and fourth corners are `NaN NaN`. The
-   loader silently drops any rectangle containing non-finite
-   coordinates.
+4. **Two files with NaN grasps.** `pcd0132cpos.txt` and `pcd0165cpos.txt`
+   contain partial rectangles with `NaN NaN` corners. The loader
+   silently drops any rectangle containing non-finite coordinates.
+   (Also flagged by Nishida-Lab's published Cornell preprocessing notes.)
 
 5. **Depth units.** `pcd*d.tiff` is float32 metres (typical range
    ~0.03–2.0). The loader returns it as `float32` without rescaling.

@@ -67,6 +67,12 @@ Workshop-blocking experiments marked **W**. RA-L-only marked **R**.
 - **Status**: blocked on lab outreach
 - **Pre-reqs**: A Penn lab agrees to host this. Likely candidates: GRASP Lab, ModLab.
 
+### **R** Build curated Cornell object-wise CV (`cornell_v2.json`)
+- **Effort**: 4-6 hours (depends on whether external mapping is sourced or built from scratch)
+- **Why deferred**: No public `pcd_id → object_id` mapping exists; Lenz/Redmon/Kumra all built private partitions. Workshop reviewers usually accept image-wise-only with a footnote. RA-L reviewers will flag missing object-wise — so this becomes blocking for the RA-L extension, not the workshop.
+- **Approach**: (a) ask a Cornell paper author for their partition, (b) cluster images by depth-image background similarity, or (c) hand-curate from visual inspection. Best: combination of (b) auto-cluster + (c) human spot-check.
+- **Outputs**: `src/data/splits/cornell_v2.json` with proper ~240-object partition. `cornell.json` v1 stays frozen as discovery artifact.
+
 ---
 
 ## Out of scope (do not pursue)
@@ -85,3 +91,6 @@ Workshop-blocking experiments marked **W**. RA-L-only marked **R**.
 | 2026-05-25 | Workshop-first, RA-L second | User priority; matches expected lab access timeline |
 | 2026-05-25 | Same repo, paper/ + experiments/ alongside course folders | User preference; lower setup overhead |
 | 2026-05-25 | Framing = training-free annotator, not novel detector | Lit search confirms detector framing is dead; annotator angle is open |
+| 2026-05-25 | Cornell = 885 images (canonical, verified) | lit-scout audit vs. Jiang 2011, Redmon 2015, Morrison 2018, Pinto 2016 — unanimous |
+| 2026-05-25 | Object-wise CV deferred to RA-L | No public mapping; workshop uses image-wise only (matches most prior papers) |
+| 2026-05-25 | Python 3.11 (not 3.12) for research venv | 3.12 not on PATH; 3.11.9 is available and ML-stable |
