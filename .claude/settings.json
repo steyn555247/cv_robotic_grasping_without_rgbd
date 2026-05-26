@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(pip install:*)",
+      "Bash(pip list:*)",
+      "Bash(pip show:*)",
+      "Bash(pip freeze:*)",
+      "Bash(conda env:*)",
+      "Bash(conda list:*)",
+      "Bash(conda activate:*)",
+      "Bash(uv:*)",
+      "Bash(jupyter:*)",
+      "Bash(pytest:*)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git tag:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(git stash:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(du:*)",
+      "Bash(wc:*)",
+      "Bash(file:*)",
+      "Bash(wget:*)",
+      "Bash(curl:*)",
+      "Bash(unzip:*)",
+      "Bash(tar:*)",
+      "PowerShell(python:*)",
+      "PowerShell(pip install:*)",
+      "PowerShell(pip list:*)",
+      "PowerShell(git status)",
+      "PowerShell(git diff:*)",
+      "PowerShell(git log:*)",
+      "PowerShell(git add:*)",
+      "PowerShell(git commit:*)",
+      "PowerShell(git tag:*)",
+      "PowerShell(git push:*)",
+      "PowerShell(git pull:*)",
+      "PowerShell(git branch:*)",
+      "PowerShell(Get-ChildItem:*)",
+      "PowerShell(Test-Path:*)",
+      "WebSearch",
+      "WebFetch"
+    ],
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(git push --force:*)",
+      "Bash(git reset --hard:*)",
+      "PowerShell(Remove-Item -Recurse -Force:*)",
+      "PowerShell(git push --force:*)"
+    ]
+  },
+  "env": {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "MPLBACKEND": "Agg"
+  }
+}
