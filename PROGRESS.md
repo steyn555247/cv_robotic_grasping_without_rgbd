@@ -46,10 +46,10 @@
 | .claude/agents/ (7 subagents) | ✓ done |
 | .claude/commands/ (8 slash commands) | ✓ done |
 | .claude/settings.json | ✓ done |
-| src/eval/cornell.py | ○ not started — needed before EXP-01 |
-| src/data/cornell_loader.py | ○ not started — needed before EXP-01 |
+| src/eval/cornell.py | ✓ done |
+| src/data/cornell_loader.py | ✓ done |
 | src/methods/heuristic/ (refactor from Streamlit) | ○ not started — needed before EXP-02 |
-| src/data/splits/cornell.json | ○ not started — needed before EXP-01 |
+| src/data/splits/cornell.json | ✓ done |
 | paper/refs.bib | ○ not started |
 | paper/main.tex (IEEE template) | ○ not started |
 
@@ -59,7 +59,7 @@
 
 | Dataset | Local | Splits frozen | Notes |
 |---|---|---|---|
-| Cornell | ✓ at `cornell comparisson/cornell_dataset/` (12 GB) | ○ pending | Re-use existing copy; don't re-download |
+| Cornell | ✓ at `cornell comparisson/cornell_dataset/` (12 GB) | ✓ frozen (`src/data/splits/cornell.json`, seed=42) | 885 images (30 more than canonical 855); gap-≥5 heuristic yields only 2 objects — image-wise CV is the usable protocol. See `data/cornell/README.md`. |
 | Jacquard | ○ | ○ | ~75 GB; fetch only when EXP-06 dispatched |
 | GraspNet-1B | ○ | ○ | Optional, very large |
 
@@ -84,3 +84,4 @@
 - 2026-05-25: Project repo created on GitHub. Initial commit.
 - 2026-05-25: Research infrastructure laid down (.claude/agents, commands, settings).
 - 2026-05-25: PROGRESS, BACKLOG, related_work scratchpad initialized.
+- 2026-05-25: dataset-ops built `src/data/cornell_loader.py` + immutable `src/data/splits/cornell.json` (885 images, seed=42 5-fold). Cornell splits frozen.
