@@ -19,7 +19,8 @@ The algorithm is essentially a depth-driven contour-tangent grasp detector:
 * Stage 3 — rank surviving grasps by ``line_length - cog_boost * proximity
   * 500`` (lower = better) when running the grid-search-winning
   ``ray_algorithm == "Direct Line with CoG Boost"`` configuration; output
-  the top-N as ``GraspRect`` instances with width = measured line length.
+  the top-N as ``GraspRect`` instances with width = measured line length
+  and height = the contour's robust extent perpendicular to the ray.
 
 The 80 px PCA-tangent block is the classical contour-tangent grasp-planning
 trick used by Morales (2001) "Heuristic Vision-Based Computation of Planar
@@ -29,12 +30,38 @@ on Principal Component Analysis": for a contour patch around a candidate
 point, the first principal component of the patch coordinates approximates
 the tangent direction, and the perpendicular is the antipodal grasp axis.
 
+Output-convention fix (2026-05-27)
+----------------------------------
+
+The original Streamlit prototype emitted ``GraspRect`` with
+``width = ray_length`` and ``height = 20.0`` (a fixed jaw-thickness
+placeholder). This breaks the Cornell GraspRect convention defined in
+``src.data.cornell_loader._corners_to_grasp_rect`` and consumed by
+``src.eval.cornell``:
+
+* Cornell's ``width`` is the gripper-opening size (the SHORTER rectangle
+  side) — that matches our ``ray_length`` and is unchanged.
+* Cornell's ``height`` is the jaw-plate length (the LONGER rectangle side),
+  typically 50-200 px for elongated objects — NOT a fixed 20-px placeholder.
+* Cornell's ``angle_rad`` is the direction of the gripper-opening axis,
+  wrapped to ``[-pi/2, pi/2]`` — our ray direction is the opening axis but
+  the raw ``atan2`` output is not wrapped.
+
+We fix the height by measuring the contour's robust extent (5th-to-95th
+percentile spread) perpendicular to the ray direction, lower-bounded at
+30 px so degenerate cases do not produce zero-area rectangles. We wrap the
+angle to ``[-pi/2, pi/2]`` to match the loader. This is a deliberate,
+documented correction of an output-convention bug — not a change to the
+detection algorithm. Where the grasp goes (CoG-biased contour-tangent
+ray-cast) is unchanged.
+
 All hyperparameters live on ``HeuristicConfig`` (see ``config.py``); this
 module reads them and does not introduce hidden magic numbers.
 """
 
 from __future__ import annotations
 
+import math
 from typing import Optional
 
 import cv2
@@ -42,6 +69,12 @@ import numpy as np
 
 from src.eval.cornell import GraspRect
 from src.methods.heuristic.config import HeuristicConfig
+
+
+# Lower bound on the perpendicular extent used as the rectangle's `height`
+# (jaw-plate length). Prevents zero/near-zero-area rectangles in degenerate
+# cases where the contour is essentially a line.
+_MIN_HEIGHT_PX: float = 30.0
 
 
 # ---------------------------------------------------------------------------
@@ -174,8 +207,21 @@ def detect_grasp(
         dx_line = end1_x - end2_x
         dy_line = end1_y - end2_y
         angle = float(np.arctan2(dy_line, dx_line))
+        # Wrap to [-pi/2, pi/2] (parallel-jaw 180-deg symmetry, matches the
+        # Cornell loader convention in `_corners_to_grasp_rect`).
+        while angle > math.pi / 2:
+            angle -= math.pi
+        while angle < -math.pi / 2:
+            angle += math.pi
         cx_mid = (end1_x + end2_x) / 2.0
         cy_mid = (end1_y + end2_y) / 2.0
+
+        # Perpendicular extent of the contour around this grasp (jaw-plate
+        # length). See `_perpendicular_extent` docstring and the
+        # module-level "Output-convention fix" note.
+        perp_height = _perpendicular_extent(
+            contour, cx_mid, cy_mid, angle, _MIN_HEIGHT_PX
+        )
 
         # Stage-3 rank score.
         if config.ray_algorithm == "Direct Line with CoG Boost":
@@ -193,6 +239,7 @@ def detect_grasp(
                 "y": cy_mid,
                 "angle": angle,
                 "line_length": float(line_length),
+                "perp_height": float(perp_height),
                 "rank_score": float(rank_score),
             }
         )
@@ -209,10 +256,53 @@ def detect_grasp(
                 y=float(g["y"]),
                 angle_rad=float(g["angle"]),
                 width=float(g["line_length"]),
-                height=20.0,
+                height=float(g["perp_height"]),
             )
         )
     return output
+
+
+# ---------------------------------------------------------------------------
+# Output-convention helpers
+# ---------------------------------------------------------------------------
+
+def _perpendicular_extent(
+    contour: np.ndarray,
+    cx: float,
+    cy: float,
+    ray_angle_rad: float,
+    min_extent: float,
+) -> float:
+    """Robust extent of the contour perpendicular to ``ray_angle_rad``.
+
+    The output rectangle's ``width`` is the ray length along the grasp
+    (opening) axis. To match the Cornell GraspRect convention (see
+    ``src.data.cornell_loader._corners_to_grasp_rect``) the ``height`` field
+    must be the jaw-plate length — i.e., the object's extent along the axis
+    perpendicular to the opening. We approximate that here as the 5th-to-95th
+    percentile spread of the contour's projection onto the perpendicular
+    axis at the grasp centre.
+
+    Lower-bounded at ``min_extent`` to avoid zero-area rectangles when the
+    contour is degenerate (single point, near-collinear).
+    """
+    pts = contour.reshape(-1, 2).astype(np.float64)
+    if pts.shape[0] == 0:
+        return float(min_extent)
+    # Perpendicular axis unit vector: ray direction rotated +90 deg.
+    perp_x = -math.sin(ray_angle_rad)
+    perp_y = math.cos(ray_angle_rad)
+    dx = pts[:, 0] - cx
+    dy = pts[:, 1] - cy
+    projections = dx * perp_x + dy * perp_y
+    if projections.size < 2:
+        return float(min_extent)
+    lo = float(np.percentile(projections, 5.0))
+    hi = float(np.percentile(projections, 95.0))
+    extent = hi - lo
+    if not math.isfinite(extent) or extent <= 0.0:
+        return float(min_extent)
+    return float(max(extent, min_extent))
 
 
 # ---------------------------------------------------------------------------
