@@ -45,3 +45,6 @@ dist/
 experiments/*/predictions/
 experiments/*/checkpoints/
 experiments/*/data_cache/
+experiments/*/depth_cache/
+experiments/*/mono_depth_cache/
+experiments/*/qualitative/
