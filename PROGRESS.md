@@ -48,7 +48,7 @@
 | .claude/settings.json | ✓ done |
 | src/eval/cornell.py | ✓ done |
 | src/data/cornell_loader.py | ✓ done |
-| src/methods/heuristic/ (refactor from Streamlit) | ○ not started — needed before EXP-02 |
+| src/methods/heuristic/ (refactor from Streamlit) | ✓ done |
 | src/data/splits/cornell.json | ✓ done |
 | paper/refs.bib | ○ not started |
 | paper/main.tex (IEEE template) | ○ not started |
