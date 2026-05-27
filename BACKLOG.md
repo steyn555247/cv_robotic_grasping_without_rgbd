@@ -26,9 +26,23 @@ Workshop-blocking experiments marked **W**. RA-L-only marked **R**.
 - **Decision**: Establishes the gap our method must accept or close.
 - **Status**: spec needed; pre-req: download checkpoint (~700 MB)
 
-### **W** EXP-04: Scoring-term ablation
-- **Effort**: 2 days
+### **W** EXP-04: Scoring-term ablation (+ CoG normalization audit)
+- **Effort**: 2-3 days (added scope: the normalization fix below)
 - **Hypothesis**: Removing CoG term drops Top-1 by ≥15pp; removing edge or depth terms changes Top-1 by <2pp.
+- **CRITICAL added scope** (surfaced by heuristic refactor agent, 2026-05-26):
+  The original `cog_quality` term divides by the image diagonal (~800 px for 640×480),
+  so it sits in [0.6, 1.0] across typical contours. This means w_cog * cog_quality has
+  a near-constant baseline that artificially amplifies the "w_cog=0.999 dominates"
+  finding. EXP-04 must:
+    1. Reproduce the original (broken-normalization) result.
+    2. Add a `cog_quality_normalized` variant that divides by the per-image max contour
+       distance to CoG (so the term spans [0, 1] properly).
+    3. Rerun grid search over weights with the corrected term.
+    4. Report: does CoG still dominate? Yes → finding is robust and the paper's
+       headline is stronger. No → the paper pivots to "after fixing a normalization
+       bug, scoring distributes differently across terms; here's what we found." Both
+       outcomes are publishable but they're different papers — this experiment
+       determines which one.
 - **Decision**: Confirms (or kills) the CoG-dominance finding as a structural claim, not a tuning artifact.
 - **Status**: spec needed; pre-req: EXP-02
 
@@ -94,3 +108,4 @@ Workshop-blocking experiments marked **W**. RA-L-only marked **R**.
 | 2026-05-25 | Cornell = 885 images (canonical, verified) | lit-scout audit vs. Jiang 2011, Redmon 2015, Morrison 2018, Pinto 2016 — unanimous |
 | 2026-05-25 | Object-wise CV deferred to RA-L | No public mapping; workshop uses image-wise only (matches most prior papers) |
 | 2026-05-25 | Python 3.11 (not 3.12) for research venv | 3.12 not on PATH; 3.11.9 is available and ML-stable |
+| 2026-05-26 | Preserve original CoG normalization in refactor | Pen-and-paper fix during refactor would invalidate grid-search winners; test as ablation in EXP-04 instead |

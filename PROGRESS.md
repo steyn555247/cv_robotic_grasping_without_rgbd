@@ -10,7 +10,7 @@
 
 | ID | Name | Status | Headline | Notes |
 |---|---|---|---|---|
-| EXP-01 | cog_only_baseline | ○ pending | — | Gating experiment. Trivial 2D-centroid baseline on full Cornell. |
+| EXP-01 | cog_only_baseline | ✓ done | GT 8.70% / Mono 16.95% Top-1 | Trivial baseline well below threshold → CoG-critique angle dead; annotator framing strengthened. See `experiments/EXP-01_*/notes.md`. |
 | EXP-02 | full_cornell_eval | ○ pending | — | Standardized eval of current heuristic (no manual crop). |
 | EXP-03 | grconvnet_repro | ○ pending | — | Public GR-ConvNet checkpoint on same Cornell split. |
 | EXP-04 | scoring_ablation | ○ pending | — | Remove each scoring term; confirm CoG dominance. |
@@ -85,3 +85,9 @@
 - 2026-05-25: Research infrastructure laid down (.claude/agents, commands, settings).
 - 2026-05-25: PROGRESS, BACKLOG, related_work scratchpad initialized.
 - 2026-05-25: dataset-ops built `src/data/cornell_loader.py` + immutable `src/data/splits/cornell.json` (885 images, seed=42 5-fold). Cornell splits frozen.
+- 2026-05-25: eval-harness built `src/eval/cornell.py` (13/13 property tests passing) — canonical Cornell evaluator.
+- 2026-05-25: lit-scout corrected canon: 885 is the canonical Cornell image count (not 855). Confirmed against Jiang 2011, Redmon 2015, Morrison 2018, Pinto 2016.
+- 2026-05-26: Python 3.11 venv with full ML stack (torch 2.12 CPU, transformers 5.9, shapely 2.1).
+- 2026-05-26: src/methods/heuristic/ refactored from Streamlit (647 lines, smoke test passes, ~2.1s/call). Three flags surfaced — most notably cog_quality normalized by image diagonal (must test in EXP-04).
+- 2026-05-26: src/methods/cog_baseline/ built (124 lines).
+- 2026-05-27: **EXP-01 complete**. CoG-only baseline: GT depth 8.70%, mono depth 16.95% Top-1. CoG-critique paper framing dead; training-free annotator framing strengthened. Monocular depth beats GT depth as a mask source (surprise finding worth its own paragraph in discussion).
