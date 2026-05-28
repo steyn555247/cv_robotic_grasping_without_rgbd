@@ -1,0 +1,52 @@
+{
+  "n_samples_in_train_with_pred_and_crop": 417,
+  "n_samples_in_test_with_pred_and_crop": 421,
+  "legacy_reported_top1": 75.89,
+  "variant_A_legacy_eval_canonical_angles_train": {
+    "total": 417,
+    "top1": 312,
+    "top5": 348,
+    "any": 348,
+    "top1_acc": 74.82014388489209,
+    "top5_acc": 83.45323741007195,
+    "any_acc": 83.45323741007195,
+    "mean_iou": 0.40710381698901144,
+    "mean_angle": 13.479881260401935
+  },
+  "variant_A_legacy_eval_canonical_angles_test": {
+    "total": 421,
+    "top1": 330,
+    "top5": 365,
+    "any": 365,
+    "top1_acc": 78.38479809976246,
+    "top5_acc": 86.69833729216153,
+    "any_acc": 86.69833729216153,
+    "mean_iou": 0.42717904447108124,
+    "mean_angle": 11.598420986713663
+  },
+  "variant_B_legacy_eval_unwrapped_angles_train": {
+    "total": 417,
+    "top1": 316,
+    "top5": 349,
+    "any": 349,
+    "top1_acc": 75.77937649880096,
+    "top5_acc": 83.69304556354916,
+    "any_acc": 83.69304556354916,
+    "mean_iou": 0.40710381698901144,
+    "mean_angle": 10.71844399090613
+  },
+  "variant_C_canonical_eval_h20_train": {
+    "top1": 0.10071942446043165,
+    "top5": 0.1630695443645084,
+    "iou_mean": 0.4034163766896206,
+    "angle_error_deg_mean": 70.85004413031865,
+    "n_samples": 417
+  },
+  "variant_D_canonical_eval_native_height_train": {
+    "top1": 0.15827338129496402,
+    "top5": 0.2014388489208633,
+    "iou_mean": 0.3004636558246138,
+    "angle_error_deg_mean": 65.37732409084369,
+    "n_samples": 417
+  }
+}

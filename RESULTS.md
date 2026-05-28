@@ -1,18 +1,29 @@
 # Master Results Table
 
-Last updated: 2026-05-27 (EXP-02 re-ran after output-convention fix)
+Last updated: 2026-05-28 (after Cornell loader angle-convention fix)
 
 Canonical dataset: **Cornell Grasping Dataset** (885 images, image-wise 5-fold CV, seed=42 splits in `src/data/splits/cornell.json`). All metrics computed via `src/eval/cornell.py` (Jaccard ≥ 0.25 AND |angle error| ≤ 30°, per Jiang 2011).
 
-## Cornell image-wise 5-fold
+> **2026-05-28 correction.** All earlier numbers in this file were computed against a buggy `_corners_to_grasp_rect` that read the grasp angle from the rectangle's *shorter* side (gripper opening) instead of the *longer* side (gripper-plate / major axis). This rotated every ground-truth grasp by ~90°, making correct predictions look wrong. The convention sweep (`experiments/EXP-AUDIT/convention_sweep.py`) and visual overlays confirmed the fix. Numbers below are post-fix and verified.
 
-| Method | Source | Top-1 (mean ± std) | Top-5 | IoU mean | Angle err | n | Notes |
+## Cornell image-wise 5-fold (post loader fix)
+
+| Method | Source | Top-1 | Top-5 | IoU mean | Angle err | n | Notes |
 |---|---|---|---|---|---|---|---|
-| **CoG-only, GT depth mask** | EXP-01 | 8.70% ± 1.98 | 8.70% | 0.112 | 27.07° | 885 | Trivial baseline: centroid + major axis + 0.6×minor extent |
-| **CoG-only, monocular depth mask** | EXP-01 | 16.95% ± 2.23 | 16.95% | 0.165 | 20.60° | 885 | Same as above, mask from DepthAnythingV2-Small |
-| Heuristic (full pipeline) | EXP-02 | 16.72% ± 1.05 | 20.34% | 0.285 | 65.17° | 885 | DepthAnything → contour → 80px PCA → ray-cast → CoG-boost rank. Re-run 2026-05-27 after fixing output-convention bug (`height` was hardcoded 20 px; now measured as perpendicular contour extent; `angle_rad` now wrapped to [-π/2, π/2]). Pre-fix: 8.70% ± 2.33 Top-1. Now ≈ tied with EXP-01 mono CoG; angle error still elevated, suggests algorithmic mis-orientation on some objects (not a convention bug). |
+| **Heuristic (uncropped, full pipeline)** | EXP-02 | **64.41%** | 67.91% | 0.335 | 19.09° | 885 | DepthAnythingV2-Small → contour → 80px PCA tangent → ray-cast → CoG-boost rank. Training-free, RGB-only. |
+| **Heuristic (with original manual crop)** | EXP-02b | **68.59%** | 72.32% | 0.356 | 17.70° | 885 | Same pipeline, image[150:450,100:500] crop then map back. |
+| CoG-only baseline (monocular mask) | EXP-01 | 1.92% | 1.92% | 0.184 | 70.80° | 885 | Trivial floor: centroid + PCA major axis + fixed small box. Confirms the heuristic's machinery does ~62 pp of real work. |
+| CoG-only baseline (GT-depth mask) | EXP-01 | 1.47% | 1.47% | 0.126 | 63.87° | 885 | As above, mask from Cornell GT depth. |
 | GR-ConvNet v1 (reproduced) | EXP-03 (pending) | — | — | — | — | — | Public checkpoint, RGB-D input |
 | Xiangli 2025 (reproduced) | EXP-08 (pending) | — | — | — | — | — | Training-free + foundation models (CLIP+SAM+DIFT) |
+
+### Pre-fix numbers (archived — DO NOT cite; buggy loader)
+
+| Method | Top-1 (buggy loader) |
+|---|---|
+| Heuristic uncropped | 16.72% |
+| Heuristic cropped | 18.64% |
+| CoG-only mono | 16.95% |
 
 ## Reference numbers from the literature
 

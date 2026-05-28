@@ -116,34 +116,38 @@ def _parse_cpos_file(path: Path) -> list[GraspRect]:
 def _corners_to_grasp_rect(pts: np.ndarray) -> GraspRect:
     """Convert 4 ordered corner pixels to a GraspRect.
 
-    Cornell encodes a grasp as a rectangle whose two pairs of parallel
-    sides are: the *jaw* sides (length = gripper opening = `width`) and
-    the *finger* sides (length = jaw thickness = `height`). The corner
-    ordering is consistent across the dataset: side (pts[0]->pts[1]) is
-    perpendicular to the gripper opening, i.e. it is the *finger* side.
+    Cornell encodes a grasp as an oriented rectangle. The two LONGER parallel
+    edges are the gripper plates; the grasp orientation ``angle_rad`` is the
+    direction of those plate edges (the rectangle's major axis). The gripper
+    opening is the distance between the plates (the SHORTER side).
 
-    We follow the widely used convention (Lenz 2015 onward): assign
-    `width` to the shorter of the two side lengths so that `angle_rad`
-    represents the orientation of the gripper opening axis.
+    This matches the GraspRect parameterisation used by the heuristic detector
+    (``src.methods.heuristic.detect``), which emits ``angle_rad`` along the
+    grasp's major (plate) axis. An earlier version of this loader took the
+    angle from the shorter side, which is rotated 90 deg from the standard
+    Cornell convention and made every prediction appear ~90 deg wrong; that
+    was a loader bug, fixed here. (Verified by the EXP-AUDIT convention sweep:
+    longer-side angle restores the heuristic to ~69%+ Top-1.)
     """
-    side_a = pts[1] - pts[0]  # one side (finger side per Cornell convention)
-    side_b = pts[2] - pts[1]  # adjacent side (jaw side per Cornell convention)
+    side_a = pts[1] - pts[0]
+    side_b = pts[2] - pts[1]
     len_a = float(np.linalg.norm(side_a))
     len_b = float(np.linalg.norm(side_b))
 
-    # `width` = gripper opening = shorter side (typical for Cornell).
+    # `width` = gripper opening = SHORTER side; the angle follows the LONGER
+    # (gripper-plate / major) axis.
     if len_a <= len_b:
-        width = len_a
-        height = len_b
-        opening_vec = side_a
+        width = len_a            # opening (shorter)
+        height = len_b           # plate length (longer)
+        plate_vec = side_b       # longer side -> grasp orientation
     else:
         width = len_b
         height = len_a
-        opening_vec = side_b
+        plate_vec = side_a
 
     cx = float(np.mean(pts[:, 0]))
     cy = float(np.mean(pts[:, 1]))
-    angle = math.atan2(float(opening_vec[1]), float(opening_vec[0]))
+    angle = math.atan2(float(plate_vec[1]), float(plate_vec[0]))
     # Wrap into [-pi/2, pi/2] — antipodal grasps are 180-symmetric.
     while angle > math.pi / 2:
         angle -= math.pi

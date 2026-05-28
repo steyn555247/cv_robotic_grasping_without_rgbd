@@ -184,9 +184,9 @@ def main() -> None:
     for sid in SAMPLE_IDS:
         try:
             out_path = _render_one(sid)
-            print(f"  ✓ {sid} -> {out_path}")
+            print(f"  OK {sid} -> {out_path}")
         except Exception as e:
-            print(f"  ✗ {sid}: {type(e).__name__}: {e}")
+            print(f"  FAIL {sid}: {type(e).__name__}: {e}")
     print(f"done. outputs under {OUT_DIR}")
 
 

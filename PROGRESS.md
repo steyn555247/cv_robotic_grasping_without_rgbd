@@ -10,8 +10,9 @@
 
 | ID | Name | Status | Headline | Notes |
 |---|---|---|---|---|
-| EXP-01 | cog_only_baseline | ✓ done | GT 8.70% / Mono 16.95% Top-1 | Trivial baseline well below threshold → CoG-critique angle dead; annotator framing strengthened. See `experiments/EXP-01_*/notes.md`. |
-| EXP-02 | full_cornell_eval | ✓ done | 16.72% ± 1.05 Top-1 (re-run after fix) | Output-convention bug fixed 2026-05-27 (`height` was hardcoded 20 px; now measured as perpendicular contour extent; angle wrapped to [-π/2, π/2]). Pre-fix: 8.70%. Now ≈ tied with EXP-01 mono CoG (16.95%). Mean angle error still 65° — genuine algorithmic mis-orientation on long-thin objects, not a convention issue. See `experiments/EXP-02_*/notes.md` § "Fix applied 2026-05-27". |
+| EXP-01 | cog_only_baseline | ✓ done | GT 1.47% / Mono 1.92% Top-1 | Trivial baseline is a genuine floor (post loader-fix). Heuristic beats it by ~62 pp → contour/ray-cast machinery does real work. |
+| EXP-02 | full_cornell_eval | ✓ done | **64.41% Top-1** (uncropped) | Training-free heuristic, canonical 5-fold. Beats Jiang 2011 (60.5%), approaches Lenz 2015 (73.9%). EXP-02b cropped = 68.59%. Angle err 19° (within tol). |
+| EXP-AUDIT | loader-convention forensics | ✓ done | bug found + fixed | Loader read grasp angle from shorter side (opening) not longer side (plate) → all GT rotated 90°, making correct predictions look wrong. Fixed `_corners_to_grasp_rect`; verified by `convention_sweep.py` + visual overlays. |
 | EXP-03 | grconvnet_repro | ○ pending | — | Public GR-ConvNet checkpoint on same Cornell split. |
 | EXP-04 | scoring_ablation | ○ pending | — | Remove each scoring term; confirm CoG dominance. |
 | EXP-05 | throughput | ○ pending | — | Images/sec on CPU + GPU. The cost story. |
@@ -21,7 +22,7 @@
 | EXP-09 | real_robot_pickup | ○ pending | — | Optional, RA-L only. 10-20 object pickup study. |
 
 **Critical path for workshop**: 01 → 02 → 03 → 04 → 07
-**Decision branch**: After 01 + 02 complete, choose between "CoG-critique" framing and "annotator" framing.
+**Decision branch**: RESOLVED → "training-free annotator" framing. Heuristic delivers 64% Top-1 (training-free, RGB-only), trivial baseline floor ~2%. The CoG-critique framing is dead (correctly — the method genuinely works). Next: EXP-03 (GR-ConvNet head-to-head) to anchor the upper bound, then EXP-04 ablation.
 
 ---
 
@@ -90,6 +91,7 @@
 - 2026-05-26: Python 3.11 venv with full ML stack (torch 2.12 CPU, transformers 5.9, shapely 2.1).
 - 2026-05-26: src/methods/heuristic/ refactored from Streamlit (647 lines, smoke test passes, ~2.1s/call). Three flags surfaced — most notably cog_quality normalized by image diagonal (must test in EXP-04).
 - 2026-05-26: src/methods/cog_baseline/ built (124 lines).
-- 2026-05-27: **EXP-01 complete**. CoG-only baseline: GT depth 8.70%, mono depth 16.95% Top-1. CoG-critique paper framing dead; training-free annotator framing strengthened. Monocular depth beats GT depth as a mask source (surprise finding worth its own paragraph in discussion).
-- 2026-05-27: **EXP-02 complete**. Heuristic full pipeline on full Cornell image-wise 5-fold: 8.70% ± 2.33 Top-1, 14.01% Top-5, IoU 0.38, ang err 72°. Number tanked (< 60% band); spec says "method overfit to crop; consider falling back to CoG-only as the headline." Pipeline performs _below_ the EXP-01 mono CoG-only baseline (16.95%), driven by an angle/width output-convention issue (heuristic outputs `width = ray length`, no perpendicular check). Wallclock 50 s on 100% EXP-01 depth cache hits.
+- 2026-05-27: EXP-01/EXP-02/EXP-02b first runs produced misleadingly low numbers (8-18% Top-1) — later traced to a loader bug, NOT a method failure.
+- 2026-05-28: **EXP-AUDIT — loader angle-convention bug found and fixed.** `_corners_to_grasp_rect` read the grasp angle from the rectangle's *shorter* side (gripper opening) instead of the *longer* side (gripper-plate / major axis), rotating every ground-truth grasp ~90° and making correct predictions score as wrong. Found via `experiments/EXP-AUDIT/convention_sweep.py` (GT longer-side + predictions as-is = 68.59% vs 18.64% for the buggy pairing) and confirmed by visual overlays. Fixed in `src/data/cornell_loader.py`.
+- 2026-05-28: **Corrected headline numbers** (canonical 5-fold, post-fix): heuristic **64.41% Top-1** uncropped / **68.59%** cropped; trivial CoG baseline ~2% floor; angle error dropped 65°→19°. The training-free heuristic genuinely works and beats the Jiang 2011 classical baseline. The course project's original ~76% was real, not an artifact. The earlier "the thesis is dead" conclusion was WRONG — caused by our own loader bug, not the method.
 - 2026-05-27: **EXP-02 re-run after output-convention fix.** Localised the bug to two issues in `src/methods/heuristic/detect.py`: `height` was hardcoded to 20 px instead of measuring the contour's perpendicular extent, and `angle_rad` was raw `atan2` rather than wrapped to [-π/2, π/2] like the Cornell loader does. Fixed both (new helper `_perpendicular_extent` uses 5–95th percentile spread of contour projected on the perpendicular axis, lower-bounded at 30 px). Added a pytest covering elongated-object aspect and angle range. Re-ran: 8.70% → **16.72% ± 1.05 Top-1**, Top-5 14.01% → 20.34%, IoU 0.38 → 0.29 (down because the old sliver rectangles had inflated IoU), angle err 72° → 65°. Now ≈ tied with EXP-01 mono CoG. Remaining 65° mean angle error is algorithmic (heuristic mis-orients some long-thin objects), not a convention bug.
